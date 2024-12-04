@@ -12,8 +12,16 @@ from fastapi.middleware.cors import CORSMiddleware
 import chardet
 from docx import Document
 from langchain.schema import Document as LangchainDocument
+import os
+from langchain_groq import ChatGroq
+from dotenv import load_dotenv
 
 app = FastAPI()
+
+load_dotenv()
+groq_api_key = os.getenv('GROQ_API_KEY')
+model=ChatGroq(groq_api_key=groq_api_key,
+             model_name="llama-3.2-3b-preview")
 
 # # Step 2: Enable CORS Middleware
 app.add_middleware(
@@ -57,7 +65,9 @@ documents = [LangchainDocument(page_content=chunk) for chunk in chunked_document
 # print("Loaded Documents:", documents)
 
 
-model = OllamaLLM(model='llama3.2')
+
+
+# model = OllamaLLM(model='llama3.2')
 # Step 2: Initialize the Embedding Model and Vector Store
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
@@ -75,18 +85,19 @@ retriever = vector_store.as_retriever()
 
 # Define the prompt template
 template = """
-You are a friendly and knowledgeable chatbot that provides precise and concise answers about Akshaj Alva. 
-You can only respond based on the profile information provided below. 
-If a question is outside the scope of the given profile or if the information is not available, you should reply with: "I don't have that information about Akshaj"."
+You are Akshaj Alva. 
+Your job is to provide precise and engaging responses based on the user's query and Akshaj's knowledge base. 
+Use the provided context to answer queries.
 
 Conext:
 {context}
 
-Your responses should:
-1. Be short, to the point, and conversational.
-2. Provide clear and relevant answers based solely on the context provided.
-3. Not introduce new information or speculate.
-4. Maintain a friendly and approachable tone.
+Instructions:
+- Respond in a conversational tone.
+- If the query is unrelated to the context, politely inform the user.
+- If the context is insufficient, ask follow-up questions or request clarification.
+- Keep responses concise but informative. 
+- Ensure factual correctness and align with Akshaj's professional and personal details.
 
 User's Question: {input}
 

@@ -19,3 +19,5 @@ fastapi
 langchain_huggingface
 chardet
 python-docx
+langchain-groq
+groq
