@@ -1,11 +1,6 @@
-flask
 transformers
-numpy
-pandas
 requests
-beautifulsoup4
 langchain 
-openai 
 sentence-transformers 
 faiss-cpu
 uvicorn
