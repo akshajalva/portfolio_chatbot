@@ -12,12 +12,9 @@ uvicorn
 ctransformers
 python-box
 streamlit
-langchain-ollama
-ollama
 langchain-community
 fastapi
 langchain_huggingface
-chardet
 python-docx
 langchain-groq
 groq
