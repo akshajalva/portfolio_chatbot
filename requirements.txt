@@ -1,15 +1,9 @@
-transformers
-requests
 langchain 
 sentence-transformers 
 faiss-cpu
 uvicorn
-ctransformers
-python-box
-streamlit
 langchain-community
 fastapi
 langchain_huggingface
 python-docx
 langchain-groq
-groq

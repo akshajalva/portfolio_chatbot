@@ -61,24 +61,19 @@ documents = [LangchainDocument(page_content=chunk) for chunk in chunked_document
 # Initialize the embedding model using HuggingFace embeddings
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# Try to create the FAISS vector store from the documents using the embedding model
-try:
-    vector_store = FAISS.from_documents(documents, embedding=embedding_model)
-    # print("Vector Store created successfully.")
-except Exception as e:
-    print(f"Error creating Vector Store: {e}")
-    raise
+# Create the FAISS vector store from the documents using the embedding model
+vector_store = FAISS.from_documents(documents, embedding=embedding_model)
 
 # Create the Retrieval-Augmented Generation (RAG) Chain
 # Initialize the retriever from the vector store
 retriever = vector_store.as_retriever()
 
 # Add conversation memory
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+# memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
 # Define the prompt template for the chatbot
 template = """
-You are Akshaj Alva, and your goal is to provide accurate and concise responses strictly based on the knowledge base provided. 
+You are Akshaj Alva, and your goal is to provide accurate and concise responses strictly based on the context provided. 
 
 Guidelines:
 1. Respond only with information directly relevant to the user's query from the context below.
@@ -90,10 +85,6 @@ Guidelines:
 
 Context:
 {context}
-
-Chat History:
-{chat_history}
-
 
 User's Question: {input}
 
@@ -119,7 +110,7 @@ def chat_endpoint(request: ChatRequest):
     user_input = request.input
 
     # Clear the memory before processing the new input
-    memory.clear()
+    # memory.clear()
     # Retrieve the answer using the QA chain
     result = qa_chain.invoke({"input": user_input})
     
@@ -127,26 +118,26 @@ def chat_endpoint(request: ChatRequest):
     return {"response": result.get('answer', "I don't have that information about Akshaj.")}
 
 # Function to handle user input during the conversation (local testing)
-def handle_conversation():
-    print("Type 'exit' to end the conversation.")
-    while True:
-        user_input = input("You: ")
-        if user_input.lower() == "exit":
-            break
+# def handle_conversation():
+#     print("Type 'exit' to end the conversation.")
+#     while True:
+#         user_input = input("You: ")
+#         if user_input.lower() == "exit":
+#             break
 
-        # Debugging retrieval: Retrieve relevant documents for the user input
-        retrieved_docs = retriever.get_relevant_documents(user_input)
+#         # Debugging retrieval: Retrieve relevant documents for the user input
+#         retrieved_docs = retriever.get_relevant_documents(user_input)
 
-        # Format the prompt with the retrieved context
-        formatted_prompt = prompt.format(context="\n".join([doc.page_content for doc in retrieved_docs]), input=user_input)
+#         # Format the prompt with the retrieved context
+#         formatted_prompt = prompt.format(context="\n".join([doc.page_content for doc in retrieved_docs]), input=user_input)
 
-        # Attempt to retrieve the answer from the QA chain
-        try:
-            result = qa_chain.invoke({"input": user_input})
-            print("Bot Response:", result.get("answer", "I don't know."))
-        except Exception as e:
-            print(f"Error during model invocation: {e}")
+#         # Attempt to retrieve the answer from the QA chain
+#         try:
+#             result = qa_chain.invoke({"input": user_input})
+#             print("Bot Response:", result.get("answer", "I don't know."))
+#         except Exception as e:
+#             print(f"Error during model invocation: {e}")
 
 # Run the conversation handling function if running locally
 if __name__ == "__main__":
-    handle_conversation()
+    pass
