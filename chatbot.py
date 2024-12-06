@@ -114,7 +114,7 @@ class ChatRequest(BaseModel):
 
 # Create the FastAPI endpoint for chatbot interaction
 @app.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+def chat_endpoint(request: ChatRequest):
     # Get user input from the API request
     user_input = request.input
 
