@@ -42,26 +42,26 @@ def read_and_chunk_document(file_path):
     text = '\n'.join([para.text for para in doc.paragraphs])
 
     # Sections to split the document by
-    sections = ["About Akshaj", "Education", "Work Experience", "Skills", "Career Gap", "Projects", "Personal Interests"]
-
+    sections = ["About Me", "Education", "Work Experience", "Skills", "Projects", "Website", "Personal Interests", "Career Gap"]
     # Split the document based on these sections
     chunks = []
-    start_idx = 0
-    for section in sections:
-        start_idx = text.find(section, start_idx)
+    for i, section in enumerate(sections):
+        start_idx = text.find(section)
+        print(f"Section: {section}, Start Index: {start_idx}")
         if start_idx != -1:
-            # Get the end index for the section (next section start or end of document)
-            end_idx = text.find(sections[sections.index(section) + 1], start_idx) if sections.index(section) + 1 < len(sections) else len(text)
+            end_idx = text.find(sections[i + 1], start_idx) if i + 1 < len(sections) else len(text)
             chunks.append(text[start_idx:end_idx].strip())
 
     return chunks
 
 # Load and chunk the document
-file_path = 'Aboutme.docx'  # Replace with your .docx file path
+file_path = 'Aboutakshaj.docx'  # Replace with your .docx file path
 chunked_documents = read_and_chunk_document(file_path)
-
+print(chunked_documents)
 # Create LangChain documents from chunks
 documents = [LangchainDocument(page_content=chunk) for chunk in chunked_documents]
+
+print([doc.page_content for doc in documents])
 
 # Initialize the embedding model using HuggingFace embeddings
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -81,19 +81,17 @@ retriever = vector_store.as_retriever()
 
 # Define the prompt template for the chatbot
 template = """
-You are Akshaj Alva. 
-Your job is to provide precise and engaging responses based on the user's query and Akshaj's knowledge base. 
-Use the provided context to answer queries.
+You are Akshaj Alva, and your goal is to provide accurate and concise responses strictly based on the knowledge base provided. 
+
+Guidelines:
+1. Respond only with information directly relevant to the user's query from the context below.
+2. If the query is unrelated to the context, reply with: "I'm sorry, I can only answer questions about Akshaj Alva's professional background."
+3. Keep responses concise and to the point unless explicitly asked for details.
+4. Always answer in the first person, as if you are Akshaj Alva.
+5. Maintain a professional tone, reflecting your skills and knowledge.
 
 Context:
 {context}
-
-Instructions:
-- Respond in a conversational tone.
-- If the query is unrelated to the context, politely inform the user.
-- If the context is insufficient, ask follow-up questions or request clarification.
-- Keep responses concise but informative. 
-- Ensure factual correctness and align with Akshaj's professional and personal details.
 
 User's Question: {input}
 
