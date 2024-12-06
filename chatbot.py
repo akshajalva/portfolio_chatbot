@@ -47,7 +47,6 @@ def read_and_chunk_document(file_path):
     chunks = []
     for i, section in enumerate(sections):
         start_idx = text.find(section)
-        print(f"Section: {section}, Start Index: {start_idx}")
         if start_idx != -1:
             end_idx = text.find(sections[i + 1], start_idx) if i + 1 < len(sections) else len(text)
             chunks.append(text[start_idx:end_idx].strip())
@@ -57,7 +56,6 @@ def read_and_chunk_document(file_path):
 # Load and chunk the document
 file_path = 'Aboutakshaj.docx'  # Replace with your .docx file path
 chunked_documents = read_and_chunk_document(file_path)
-print(chunked_documents)
 # Create LangChain documents from chunks
 documents = [LangchainDocument(page_content=chunk) for chunk in chunked_documents]
 
