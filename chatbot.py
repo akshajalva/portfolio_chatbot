@@ -1,20 +1,20 @@
 # Import necessary libraries and modules
 # from langchain_ollama import OllamaLLM
+import os
+from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.chains import retrieval
-from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import chardet
+from langchain.memory import ConversationBufferMemory
 from docx import Document as DocxDocument
 from langchain.schema import Document as LangchainDocument
-import os
 from langchain_groq import ChatGroq
-from dotenv import load_dotenv
+
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -50,7 +50,6 @@ def read_and_chunk_document(file_path):
         if start_idx != -1:
             end_idx = text.find(sections[i + 1], start_idx) if i + 1 < len(sections) else len(text)
             chunks.append(text[start_idx:end_idx].strip())
-
     return chunks
 
 # Load and chunk the document
@@ -58,8 +57,6 @@ file_path = 'Aboutakshaj.docx'  # Replace with your .docx file path
 chunked_documents = read_and_chunk_document(file_path)
 # Create LangChain documents from chunks
 documents = [LangchainDocument(page_content=chunk) for chunk in chunked_documents]
-
-print([doc.page_content for doc in documents])
 
 # Initialize the embedding model using HuggingFace embeddings
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -72,10 +69,12 @@ except Exception as e:
     print(f"Error creating Vector Store: {e}")
     raise
 
-# Step 3: Create the Retrieval-Augmented Generation (RAG) Chain
-
+# Create the Retrieval-Augmented Generation (RAG) Chain
 # Initialize the retriever from the vector store
 retriever = vector_store.as_retriever()
+
+# Add conversation memory
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
 # Define the prompt template for the chatbot
 template = """
@@ -85,11 +84,16 @@ Guidelines:
 1. Respond only with information directly relevant to the user's query from the context below.
 2. If the query is unrelated to the context, reply with: "I'm sorry, I can only answer questions about Akshaj Alva's professional background."
 3. Keep responses concise and to the point unless explicitly asked for details.
-4. Always answer in the first person, as if you are Akshaj Alva.
-5. Maintain a professional tone, reflecting your skills and knowledge.
+4. Do not ask the user about their interests or knowledge. 
+5. Always answer in the first person, as if you are Akshaj Alva.
+6. Maintain a professional tone, reflecting your skills and knowledge.
 
 Context:
 {context}
+
+Chat History:
+{chat_history}
+
 
 User's Question: {input}
 
@@ -102,6 +106,25 @@ prompt = ChatPromptTemplate.from_template(template)
 # Define the Retrieval QA Chain to process the documents and answer queries
 document_chain = create_stuff_documents_chain(model, prompt)
 qa_chain = retrieval.create_retrieval_chain(retriever, document_chain)
+
+
+# Define a Pydantic Model for Input (used in FastAPI)
+class ChatRequest(BaseModel):
+    input: str
+
+# Create the FastAPI endpoint for chatbot interaction
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    # Get user input from the API request
+    user_input = request.input
+
+    # Clear the memory before processing the new input
+    memory.clear()
+    # Retrieve the answer using the QA chain
+    result = qa_chain.invoke({"input": user_input})
+    
+    # Return the response to the user
+    return {"response": result.get('answer', "I don't have that information about Akshaj.")}
 
 # Function to handle user input during the conversation (local testing)
 def handle_conversation():
@@ -123,22 +146,6 @@ def handle_conversation():
             print("Bot Response:", result.get("answer", "I don't know."))
         except Exception as e:
             print(f"Error during model invocation: {e}")
-
-# Step 5: Define a Pydantic Model for Input (used in FastAPI)
-class ChatRequest(BaseModel):
-    input: str
-
-# Step 6: Create the FastAPI endpoint for chatbot interaction
-@app.post("/chat")
-def chat_endpoint(request: ChatRequest):
-    # Get user input from the API request
-    user_input = request.input
-    
-    # Retrieve the answer using the QA chain
-    result = qa_chain.invoke({"input": user_input})
-    
-    # Return the response to the user
-    return {"response": result.get('answer', "I don't have that information about Akshaj.")}
 
 # Run the conversation handling function if running locally
 if __name__ == "__main__":
